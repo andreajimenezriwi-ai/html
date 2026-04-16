@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HTML Elements Matching Activity</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f4f0;
+      color: #1a1a18;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #1a1a18;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #5f5e5a;
+      margin-bottom: 24px;
+    }
+
+    .tag-pill {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: grab;
+      user-select: none;
+      border: 1.5px solid transparent;
+      transition: opacity .15s, transform .1s;
+    }
+    .tag-pill:active { cursor: grabbing; transform: scale(1.05); }
+    .tag-pill.dragging { opacity: .4; }
+    .tag-pill.used { opacity: .3; pointer-events: none; }
+
+    .def-card {
+      background: #ffffff;
+      border: 0.5px solid #c8c7c0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 56px;
+      transition: border-color .15s, background .15s;
+    }
+    .def-card.over   { border-color: #378add; background: #e6f1fb; }
+    .def-card.correct{ border-color: #3b6d11; background: #eaf3de; }
+    .def-card.wrong  { border-color: #a32d2d; background: #fcebeb; animation: shake .3s ease; }
+
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      25%{transform:translateX(-6px)}
+      75%{transform:translateX(6px)}
+    }
+
+    .drop-zone {
+      min-width: 88px;
+      height: 34px;
+      border: 1.5px dashed #c8c7c0;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #888780;
+      flex-shrink: 0;
+    }
+    .drop-zone.filled { border-style: solid; border-color: transparent; background: transparent; }
+
+    .def-text { font-size: 14px; color: #1a1a18; line-height: 1.4; flex: 1; }
+
+    .score-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #5f5e5a;
+    }
+    .score-num { font-size: 22px; font-weight: 500; color: #1a1a18; }
+
+    .pills-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 16px;
+      background: #eeede8;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      min-height: 56px;
+    }
+
+    #defs-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .feedback-msg { font-size: 13px; font-weight: 500; min-width: 60px; flex-shrink: 0; }
+
+    button {
+      background: transparent;
+      border: 0.5px solid #c8c7c0;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-left: auto;
+      color: #1a1a18;
+    }
+    button:hover { background: #eeede8; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>HTML elements matching activity</h1>
+  <p class="subtitle">Drag each tag to the correct description.</p>
+
+  <div class="score-bar">
+    <span>Score</span>
+    <span class="score-num" id="score">0 / 11</span>
+    <button onclick="resetAll()">Reset</button>
+  </div>
+
+  <div class="pills-area" id="pills-area"></div>
+  <div id="defs-list"></div>
+</div>
+
+<script>
+const items = [
+  { tag: "&lt;header&gt;", color: "#E6F1FB", border: "#185FA5", text: "#0C447C", def: "The top section of a page — usually has the logo and site name" },
+  { tag: "&lt;nav&gt;",    color: "#E1F5EE", border: "#0F6E56", text: "#085041", def: "Contains the navigation links (Home, About, Contact…)" },
+  { tag: "&lt;main&gt;",  color: "#EEEDFE", border: "#534AB7", text: "#3C3489", def: "Holds the main content of the page" },
+  { tag: "&lt;aside&gt;", color: "#FBEAF0", border: "#993556", text: "#72243E", def: "A side panel — extra info like related articles or ads" },
+  { tag: "&lt;footer&gt;",color: "#F1EFE8", border: "#5F5E5A", text: "#444441", def: "The bottom section — copyright, links, contact info" },
+  { tag: "&lt;h1&gt;",    color: "#FAEEDA", border: "#854F0B", text: "#633806", def: "The main title of the page — the biggest heading" },
+  { tag: "&lt;h2&gt;",    color: "#FAEEDA", border: "#854F0B", text: "#633806", def: "A section title — smaller than h1, used for sub-topics" },
+  { tag: "&lt;p&gt;",     color: "#EAF3DE", border: "#3B6D11", text: "#27500A", def: "A paragraph of text" },
+  { tag: "&lt;img&gt;",   color: "#FAECE7", border: "#993C1D", text: "#712B13", def: "Displays an image on the page" },
+  { tag: "&lt;a&gt;",     color: "#E6F1FB", border: "#185FA5", text: "#0C447C", def: "A clickable link — takes you to another page or section" },
+  { tag: "&lt;ul&gt;",    color: "#E1F5EE", border: "#0F6E56", text: "#085041", def: "An unordered (bullet point) list — uses &lt;li&gt; for each item" },
+];
+
+let correct = 0;
+let draggedTag = null;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildPills(order) {
+  const area = document.getElementById("pills-area");
+  area.innerHTML = "";
+  order.forEach(i => {
+    const item = items[i];
+    const pill = document.createElement("div");
+    pill.className = "tag-pill";
+    pill.draggable = true;
+    pill.dataset.idx = i;
+    pill.innerHTML = item.tag;
+    pill.style.cssText = `background:${item.color};border-color:${item.border};color:${item.text};`;
+    pill.addEventListener("dragstart", () => {
+      draggedTag = i;
+      setTimeout(() => pill.classList.add("dragging"), 0);
+    });
+    pill.addEventListener("dragend", () => pill.classList.remove("dragging"));
+    area.appendChild(pill);
+  });
+}
+
+function buildDefs() {
+  const list = document.getElementById("defs-list");
+  list.innerHTML = "";
+  const shuffled = shuffle([...Array(items.length).keys()]);
+  shuffled.forEach(i => {
+    const item = items[i];
+    const card = document.createElement("div");
+    card.className = "def-card";
+    card.dataset.target = i;
+
+    const zone = document.createElement("div");
+    zone.className = "drop-zone";
+    zone.textContent = "drop here";
+
+    const txt = document.createElement("div");
+    txt.className = "def-text";
+    txt.innerHTML = item.def;
+
+    const fb = document.createElement("div");
+    fb.className = "feedback-msg";
+
+    card.appendChild(zone);
+    card.appendChild(txt);
+    card.appendChild(fb);
+
+    card.addEventListener("dragover", e => { e.preventDefault(); card.classList.add("over"); });
+    card.addEventListener("dragleave", () => card.classList.remove("over"));
+    card.addEventListener("drop", e => {
+      e.preventDefault();
+      card.classList.remove("over");
+      if (card.classList.contains("correct")) return;
+      const target = parseInt(card.dataset.target);
+      if (draggedTag === target) {
+        const it = items[target];
+        zone.innerHTML = `<span style="font-family:monospace;font-size:12px;font-weight:500;color:${it.text};background:${it.color};border:1px solid ${it.border};padding:3px 8px;border-radius:6px;">${it.tag}</span>`;
+        zone.classList.add("filled");
+        card.classList.add("correct");
+        fb.textContent = "Correct!";
+        fb.style.color = "#27500A";
+        const usedPill = document.querySelector(`.tag-pill[data-idx="${target}"]`);
+        if (usedPill) usedPill.classList.add("used");
+        correct++;
+        document.getElementById("score").textContent = correct + " / " + items.length;
+        if (correct === items.length) {
+          setTimeout(() => { document.getElementById("score").textContent = "All correct!"; }, 300);
+        }
+      } else {
+        card.classList.add("wrong");
+        fb.textContent = "Try again";
+        fb.style.color = "#a32d2d";
+        setTimeout(() => { card.classList.remove("wrong"); fb.textContent = ""; }, 800);
+      }
+      draggedTag = null;
+    });
+
+    list.appendChild(card);
+  });
+}
+
+function resetAll() {
+  correct = 0;
+  document.getElementById("score").textContent = "0 / " + items.length;
+  buildPills(shuffle([...Array(items.length).keys()]));
+  buildDefs();
+}
+
+buildPills(shuffle([...Array(items.length).keys()]));
+buildDefs();
+</script>
+</body>
+</html>
